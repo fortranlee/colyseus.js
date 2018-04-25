@@ -48,22 +48,26 @@ export class Room<T= any> extends StateContainer<T & any> {
 
     public connect(connection: Connection) {
         this.connection = connection;
-        this.connection.reconnectEnabled = false;
-        this.connection.onmessage = this.onMessageCallback.bind(this);
-        this.connection.onclose = (e) => this.onLeave.dispatch(e);
-        this.connection.onerror = (e) => {
-            console.warn(`Possible causes: room's onAuth() failed or maxClients has been reached.`);
-            this.onError.dispatch(e);
-        };
+        // this.connection.reconnectEnabled = false;
+        // this.connection.onmessage = this.onMessageCallback.bind(this);
+        // this.connection.onclose = (e) => this.onLeave.dispatch(e);
+        // this.connection.onerror = (e) => {
+        //     console.warn(`Possible causes: room's onAuth() failed or maxClients has been reached.`);
+        //     this.onError.dispatch(e);
+        // };
     }
 
     public leave(): void {
-        if (this.connection) {
-            this.connection.close();
-
-        } else {
+        // if (this.connection) {
+        //     this.connection.close();
+        //
+        // } else {
             this.onLeave.dispatch();
-        }
+        // }
+    }
+
+    public requestLeave(): void {
+        this.connection.send([ Protocol.LEAVE_ROOM, this.id ]);
     }
 
     public send(data): void {
@@ -109,7 +113,7 @@ export class Room<T= any> extends StateContainer<T & any> {
         }
     }
 
-    protected setState( encodedState: Buffer, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {
+    public setState( encodedState: Buffer, remoteCurrentTime?: number, remoteElapsedTime?: number ): void {
         const state = msgpack.decode(encodedState);
         this.set(state);
 
@@ -126,7 +130,7 @@ export class Room<T= any> extends StateContainer<T & any> {
         this.onStateChange.dispatch(state);
     }
 
-    protected patch( binaryPatch ) {
+    public patch( binaryPatch ) {
         // apply patch
         this._previousState = Buffer.from(fossilDelta.apply( this._previousState, binaryPatch));
 

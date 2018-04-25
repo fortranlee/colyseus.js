@@ -137,10 +137,11 @@ export class Client {
                 return;
             }
 
+            room.id = message[1];
             this.rooms[room.id] = room;
 
-            room.id = message[1];
-            room.connect(this.createConnection(room.id, room.options));
+            // room.connect(this.createConnection(room.id, room.options));
+            room.connect(this.connection);
 
             delete this.connectingRooms[ requestId ];
 
@@ -158,6 +159,37 @@ export class Client {
                 console.warn('receiving ROOM_LIST after timeout:', message[2]);
             }
 
+        } else if (code === Protocol.ROOM_STATE) {
+            const room = this.rooms[message[1]];
+            if (!room) {
+                return;
+            }
+            const state = message[2];
+            const remoteCurrentTime = message[3];
+            const remoteElapsedTime = message[4];
+
+            room.setState.call(room, state, remoteCurrentTime, remoteElapsedTime);
+
+        } else if (code === Protocol.ROOM_STATE_PATCH) {
+            const room = this.rooms[message[1]];
+            if (!room) {
+                return;
+            }
+            room.patch.call(room, message[2] );
+
+        } else if (code === Protocol.ROOM_DATA) {
+            const room = this.rooms[message[1]];
+            if (!room) {
+                return;
+            }
+            room.onMessage.dispatch(message[2]);
+
+        } else if (code === Protocol.LEAVE_ROOM) {
+            const room = this.rooms[message[1]];
+            if (!room) {
+                return;
+            }
+            room.leave();
         } else {
             this.onMessage.dispatch(message);
         }
